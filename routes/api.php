@@ -58,6 +58,7 @@ Route::middleware(["auth:sanctum"])->group(function () {
 
         // products
         Route::get("/", [\App\Http\Controllers\Api\Products\ProductController::class, "list"])->name("list");
+        Route::get("/search", [\App\Http\Controllers\Api\Products\ProductController::class, "search"])->name("search");
         Route::post("/create", [\App\Http\Controllers\Api\Products\ProductController::class, "create"])->name("create");
         Route::post("/update/{id}", [\App\Http\Controllers\Api\Products\ProductController::class, "update"])->name("update");
         Route::post("/delete/{id}", [\App\Http\Controllers\Api\Products\ProductController::class, "delete"])->name("delete");

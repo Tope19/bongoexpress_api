@@ -113,4 +113,27 @@ class ProductController extends Controller
         }
     }
 
+    public function search(Request $request)
+    {
+        try {
+            $data = $request->validate([
+                "keyword" => "required|string",
+            ]);
+            $products = $this->product_service->search($data['keyword']);
+            // dd($products);
+            $data = ProductResource::collection($products);
+            return ApiHelper::validResponse("Products retrieved successfully", $data);
+        } catch (ValidationException $e) {
+            report_error($e);
+            $message = $e->validator->errors()->first();
+            return ApiHelper::inputErrorResponse($message, ApiConstants::VALIDATION_ERR_CODE, null, $e);
+        } catch (ProductException $e) {
+            report_error($e);
+            return ApiHelper::problemResponse($e->getMessage(), ApiConstants::BAD_REQ_ERR_CODE, null, $e);
+        } catch (Exception $e) {
+            report_error($e);
+            return ApiHelper::throwableResponse($e, $request);
+        }
+    }
+
 }
