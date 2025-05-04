@@ -111,4 +111,10 @@ Route::middleware(["auth:sanctum"])->group(function () {
         Route::post("/initialize", [\App\Http\Controllers\Api\Payment\PaymentController::class, "initialize"])->name("initialize");
     });
 
+    // orders
+    Route::prefix("orders")->as("orders.")->group(function () {
+        Route::get("/", [\App\Http\Controllers\Api\Order\OrderController::class, "list"])->name("list");
+        Route::get("/show/{id}", [\App\Http\Controllers\Api\Order\OrderController::class, "show"])->name("show");
+    });
+
 });
