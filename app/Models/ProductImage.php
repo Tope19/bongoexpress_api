@@ -17,12 +17,12 @@ class ProductImage extends Model
     {
         return $this->belongsTo(Product::class);
     }
-    public function getImageUrlAttribute()
-    {
-        return asset('storage/' . $this->image);
-    }
-    public function getImagePathAttribute()
-    {
-        return storage_path('app/public/' . $this->image);
-    }
+    // public function getImageUrlAttribute()
+    // {
+    //     return asset('storage/' . $this->image);
+    // }
+    // public function getImagePathAttribute()
+    // {
+    //     return storage_path('app/public/' . $this->image);
+    // }
 }

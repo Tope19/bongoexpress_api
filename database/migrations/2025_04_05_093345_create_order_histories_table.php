@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('order_no')->unique();
             $table->enum('delivery_method', ['Door Delivery', 'Self Pickup']);
+            $table->decimal('delivery_fee', 10, 2)->default(0);
             $table->decimal('subtotal_price', 10, 2)->default(0);
             $table->decimal('total_price', 10, 2)->default(0);
             $table->enum('status', ['Pending', 'Ongoing', 'Completed', 'Cancelled'])->default('Pending');

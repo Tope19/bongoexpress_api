@@ -22,8 +22,12 @@ class CartService
     }
 
     public static function getById($key, $column = "id"): Cart
-    {
+    {   $user = auth()->user();
+        if (empty($user)) {
+            throw new ModelNotFoundException("User not found");
+        }
         $model = Cart::where($column, $key)
+                    ->where('user_id', $user->id)
                     ->with(['size.product', 'user'])
                     ->first();
         if (empty($model)) {
@@ -145,7 +149,12 @@ class CartService
     }
     public function getAll($per_page = null)
     {
+        $user = auth()->user();
+        if (empty($user)) {
+            throw new ModelNotFoundException("User not found");
+        }
         $query = Cart::query()
+            ->where('user_id', $user->id)
             ->with(['size.product', 'user']);
         if (!empty($per_page)) {
             return $query->paginate($per_page);

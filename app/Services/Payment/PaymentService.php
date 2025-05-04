@@ -81,19 +81,19 @@ class PaymentService
             $subtotal = $cartItems->sum(function ($cartItem) {
                 return $cartItem->size->price * $cartItem->quantity;
             });
-
+            $total = 0.00;
             // Apply any additional logic here (shipping fee, discounts, etc.)
             if ($data['delivery_method'] == 'Door Delivery') {
 
                 // get the user address
                 // Add shipping fee if applicable
-                $shippingFee = 500; // Example shipping fee
-                $subtotal += $shippingFee;
+                $shippingFee = 500.00; // Example shipping fee
+                $total += $shippingFee;
             }
 
             // dd($cartItems);
 
-            $total = $subtotal; // Simplified
+            // $total = $subtotal; // Simplified
 
             // generate a reference for paystack
             $reference = 'psk_ref_' . uniqid();
@@ -104,6 +104,7 @@ class PaymentService
                 'order_no' => 'BONGO_ORD-' . strtoupper(uniqid()),
                 'delivery_method' => $data['delivery_method'],
                 'payment_method' => $data['payment_method'],
+                'delivery_fee' => $data['delivery_method'] == 'Door Delivery' ? $shippingFee : 0.00,
                 'subtotal_price' => $subtotal,
                 'total_price' => $total, // Simplified
                 'status' => 'Pending',
