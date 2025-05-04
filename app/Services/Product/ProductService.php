@@ -108,4 +108,18 @@ class ProductService
         }
         return $query->get();
     }
+
+    // search
+    public function search($query, $per_page = null)
+    {
+        $product = Product::query()
+                            ->with(["category", "images", "sizes"])
+                                ->where("status", 1)
+                                    ->where("name", "LIKE", "%$query%")
+                                        ->orWhere("description", "LIKE", "%$query%");
+        if (!empty($per_page)) {
+            return $product->paginate($per_page);
+        }
+        return $product->get();
+    }
 }
