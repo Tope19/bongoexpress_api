@@ -23,7 +23,13 @@ class AppMailerService
     {
         try {
             Helper::dispatchJob(new AppMailerJob($data));
+            \Log::info('Email queued successfully', [
+                'to' => $data['to'],
+                'subject' => $data['subject'],
+            ]);
         } catch (\Exception $e) {
+            // Log the error message
+            report_error($e);
             throw $e;
         }
     }
@@ -45,7 +51,13 @@ class AppMailerService
     {
         try {
             Helper::dispatchJobSync(new AppMailerJob($data));
+            \Log::info('Email sent successfully', [
+                'to' => $data['to'],
+                'subject' => $data['subject'],
+            ]);
         } catch (\Exception $e) {
+            // Log the error message
+            report_error($e);
             throw $e;
         }
     }

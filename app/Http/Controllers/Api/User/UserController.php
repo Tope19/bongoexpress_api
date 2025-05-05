@@ -49,4 +49,17 @@ class UserController extends Controller
             return ApiHelper::problemResponse($this->serverErrorMessage, ApiConstants::SERVER_ERR_CODE, null, $e);
         }
     }
+
+    //delete user
+    public function delete()
+    {
+        try {
+            $user = $this->user_service->delete(auth()->id());
+            return ApiHelper::validResponse("User deleted successfully", UserResource::make($user));
+        } catch (ValidationException $e) {
+            return ApiHelper::inputErrorResponse($this->validationErrorMessage, ApiConstants::VALIDATION_ERR_CODE, null, $e);
+        } catch (Exception $e) {
+            return ApiHelper::problemResponse($this->serverErrorMessage, ApiConstants::SERVER_ERR_CODE, null, $e);
+        }
+    }
 }

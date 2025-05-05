@@ -49,8 +49,11 @@ Route::middleware(["auth:sanctum"])->group(function () {
     Route::get("/me", [UserController::class, "me"])->name("me");
 
     Route::prefix("user")->as("user.")->group(function () {
+         // logout
+        Route::post("/logout", [LoginController::class, "logout"])->name("logout");
         Route::prefix("profile")->as("profile.")->group(function () {
             Route::post("/update", [UserController::class, "update"])->name("update");
+            Route::post("/delete", [UserController::class, "delete"])->name("delete");
         });
     });
 

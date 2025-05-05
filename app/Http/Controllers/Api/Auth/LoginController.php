@@ -77,4 +77,15 @@ class LoginController extends Controller
             return ApiHelper::throwableResponse($e, $request);
         }
     }
+
+    // logout user
+    public function logout()
+    {
+        try {
+            auth()->user()->tokens()->delete();
+            return ApiHelper::validResponse("User logged out successfully");
+        } catch (Exception $e) {
+            return ApiHelper::problemResponse($this->serverErrorMessage, ApiConstants::SERVER_ERR_CODE, null, $e);
+        }
+    }
 }
