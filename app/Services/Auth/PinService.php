@@ -39,7 +39,7 @@ class PinService
             'expires_at' => $data["expires_at"],
         ]);
 
-        AppMailerService::send([
+        AppMailerService::sendNow([
             "data" => [
                 "pin" => $pin,
                 'user' => $user,

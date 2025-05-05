@@ -103,4 +103,35 @@ class UserService
             throw $th;
         }
     }
+
+    // delete user
+    public function delete($id = null)
+    {
+        DB::beginTransaction();
+        try {
+            $user = !empty($id) ? $this->getById($id) : auth()->user();
+            // delete user
+            $user->delete();
+            DB::commit();
+            return $user;
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            throw $th;
+        }
+    }
+
+    public function logout($id = null)
+    {
+        DB::beginTransaction();
+        try {
+            $user = !empty($id) ? $this->getById($id) : auth()->user();
+            // delete user
+            $user->tokens()->delete();
+            DB::commit();
+            return $user;
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            throw $th;
+        }
+    }
 }
