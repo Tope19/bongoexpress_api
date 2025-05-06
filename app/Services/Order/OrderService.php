@@ -44,7 +44,7 @@ class OrderService
         }
         $query = Order::query()
             ->where('user_id', $user->id)
-            ->with(['items', 'user']);
+            ->with(['items.product.product.images', 'user']);
         if (!empty($per_page)) {
             return $query->paginate($per_page);
         }

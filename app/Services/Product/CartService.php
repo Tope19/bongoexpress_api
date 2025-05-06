@@ -28,7 +28,7 @@ class CartService
         }
         $model = Cart::where($column, $key)
                     ->where('user_id', $user->id)
-                    ->with(['size.product', 'user'])
+                    ->with(['size.product.images', 'user'])
                     ->first();
         if (empty($model)) {
             throw new ModelNotFoundException("Cart Item not found");
@@ -91,7 +91,7 @@ class CartService
             // Check if this size is already in the user's cart
             $cartItem = Cart::where('user_id', $data['user_id'])
                 ->where('product_size_id', $data['product_size_id'])
-                ->with(['size.product', 'user'])
+                ->with(['size.product.images', 'user'])
                 ->first();
 
             // dd($cartItem);
@@ -155,7 +155,7 @@ class CartService
         }
         $query = Cart::query()
             ->where('user_id', $user->id)
-            ->with(['size.product', 'user']);
+            ->with(['size.product.images', 'user']);
         if (!empty($per_page)) {
             return $query->paginate($per_page);
         }

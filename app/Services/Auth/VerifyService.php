@@ -48,7 +48,7 @@ class VerifyService
                 "type" => $data["type"],
                 "email" => $data["email"],
                 "expires_at" => $pin_expiry,
-                "length" => config("system.configuration.length", 6),
+                "length" => config("system.configuration.length", 4),
                 "code_type" => "int",
             ]);
         });
