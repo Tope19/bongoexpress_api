@@ -30,7 +30,7 @@ class PasswordService
         $this->pin_service->create($user, [
             "type" => OtpConstants::TYPE_RESET_PASSWORD,
             "expires_at" => $pin_expiry,
-            "length" => config("system.configuration.length", 6),
+            "length" => config("system.configuration.length", 4),
             "code_type" => "int",
         ]);
     }
