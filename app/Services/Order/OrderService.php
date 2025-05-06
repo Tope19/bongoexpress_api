@@ -25,7 +25,7 @@ class OrderService
         }
         $model = Order::where($column, $key)
                     ->where('user_id', $user->id)
-                    ->with(['items', 'user'])
+                    ->with(['items.product.product.images', 'user'])
                     ->first();
         if (empty($model)) {
             throw new ModelNotFoundException("Order not found");
