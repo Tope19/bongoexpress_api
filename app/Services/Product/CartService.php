@@ -3,6 +3,7 @@
 namespace App\Services\Product;
 
 use App\Exceptions\General\ModelNotFoundException;
+use App\Exceptions\Product\CartException;
 use App\Models\Cart;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -117,7 +118,7 @@ class CartService
         }
     }
 
-    public function update(array $data, $id = null)
+    public function addCartItem(array $data, $id = null)
     {
         DB::beginTransaction();
         try {
@@ -134,6 +135,30 @@ class CartService
             throw $th;
         }
     }
+
+    public function removeCartItem(array $data, $id = null)
+    {
+        DB::beginTransaction();
+        try {
+            $data = self::validate2($data, $id);
+
+            $cart = !empty($id) ? $this->getById($id) : $this->cart;
+            if ($cart->quantity > 1) {
+                $cart->quantity -= $data['quantity'];
+                $cart->save();
+            } else {
+                throw new CartException("Cart item quantity must be at least 1");
+                // $cart->delete();
+            }
+
+            DB::commit();
+            return $cart->refresh();
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            throw $th;
+        }
+    }
+
     public function delete($id = null)
     {
         DB::beginTransaction();

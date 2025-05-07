@@ -5,6 +5,7 @@ namespace App\Helpers;
 use App\Constants\General\ApiConstants;
 use App\Constants\General\NotificationConstants;
 use Exception;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -17,25 +18,34 @@ class ApiHelper
 
     public static function throwableResponse(Throwable $e, ?Request $request = null)
     {
-        // throw $e;
         logger('Throwable', [$e->getMessage(), $e->getTrace()]);
+
         if ($e instanceof HttpException) {
             throw $e;
         }
-        if (! empty($request)) {
-            if ($request->expectsJson()) {
-                return ApiHelper::problemResponse(
-                    self::SERVER_ERROR_MESSAGE,
-                    ApiConstants::SERVER_ERR_CODE
-                );
-            }
 
-            return back()->withInput($request->all())
-                ->with(NotificationConstants::ERROR_MSG, self::SERVER_ERROR_MESSAGE);
+        // Handle authentication issues specifically
+        if ($e instanceof AuthenticationException) {
+            return response()->json([
+                'message' => 'Unauthenticated',
+                'code' => 401
+            ], 401);
         }
 
-        return back()->with(NotificationConstants::ERROR_MSG, self::SERVER_ERROR_MESSAGE);
+        if (!empty($request) && $request->expectsJson()) {
+            return ApiHelper::problemResponse(
+                self::SERVER_ERROR_MESSAGE,
+                ApiConstants::SERVER_ERR_CODE
+            );
+        }
+
+        // Fallback for unexpected scenarios — still return a JSON response
+        return response()->json([
+            'message' => $e->getMessage(),
+            'code' => ApiConstants::SERVER_ERR_CODE,
+        ], 500);
     }
+
 
     public static function problemResponse(
         ?string $message,
@@ -184,5 +194,5 @@ class ApiHelper
         return $buildResponse;
     }
 
-    
+
 }
