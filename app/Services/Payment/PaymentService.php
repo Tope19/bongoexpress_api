@@ -65,6 +65,11 @@ class PaymentService
     public function create(array $data)
     {
         $data = self::validate($data);
+        $paystackSecretKey = config('services.paystack.secret_key');
+        if (empty($paystackSecretKey)) {
+            logger('Paystack secret key not set');
+            throw new PaymentException('Paystack secret key not set');
+        }
         $user = auth()->user();
         // Get Cart Items
         $cartItems = Cart::where('user_id', $user->id)
@@ -130,10 +135,18 @@ class PaymentService
             ]);
 
             // Initialize payment on Paystack
-            $paystackResponse = Http::withToken(env('PAYSTACK_SECRET_KEY'))->post('https://api.paystack.co/transaction/initialize', [
+            $paystackResponse = Http::withToken($paystackSecretKey)->post('https://api.paystack.co/transaction/initialize', [
                 'email' => $user->email,
                 'amount' => $total * 100, // Paystack requires amount in kobo
                 'reference' => $reference,
+            ]);
+
+            // log the response
+            logger('Paystack response', [
+                'response' => $paystackResponse->json(),
+                'status_code' => $paystackResponse->status(),
+                'body' => $paystackResponse->body(),
+                'key' => substr($paystackSecretKey, 0, 10)
             ]);
 
             if (!$paystackResponse->ok()) {
@@ -158,14 +171,19 @@ class PaymentService
     {
         // Verify Paystack signature
         $paystackSignature = request()->header('x-paystack-signature');
-        $computedHash = hash_hmac('sha512', file_get_contents('php://input'), env('PAYSTACK_SECRET_KEY'));
+        $paystackSecretKey = config('services.paystack.secret_key');
+        $computedHash = hash_hmac('sha512', file_get_contents('php://input'), $paystackSecretKey);
 
         if ($paystackSignature !== $computedHash) {
+            logger('Invalid Paystack signature');
             abort(401, 'Invalid signature.');
         }
 
         // Process only successful charges
         if ($payload['event'] === 'charge.success') {
+            logger('Paystack charge success', [
+                'payload' => $payload,
+            ]);
             $reference = $payload['data']['reference'];
             $amountPaid = $payload['data']['amount'] / 100; // Convert from kobo
 
@@ -197,6 +215,9 @@ class PaymentService
 
         // Optionally handle `charge.failed`
         if ($payload['event'] === 'charge.failed') {
+            logger('Paystack charge failed', [
+                'payload' => $payload,
+            ]);
             $reference = $payload['data']['reference'];
 
             DB::transaction(function () use ($reference) {
