@@ -65,8 +65,26 @@ class CartController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $data = $this->cart_service->update($request->all(), $id);
+            $data = $this->cart_service->addCartItem($request->all(), $id);
             return ApiHelper::validResponse("Cart updated", new CartResource($data));
+        } catch (ValidationException $e) {
+            report_error($e);
+            $message = $e->validator->errors()->first();
+            return ApiHelper::inputErrorResponse($message, ApiConstants::VALIDATION_ERR_CODE, null, $e);
+        } catch (CartException $e) {
+            report_error($e);
+            return ApiHelper::problemResponse($e->getMessage(), ApiConstants::BAD_REQ_ERR_CODE, null, $e);
+        } catch (Exception $e) {
+            report_error($e);
+            return ApiHelper::throwableResponse($e, $request);
+        }
+    }
+
+    public function removeCartItem(Request $request, $id)
+    {
+        try {
+            $data = $this->cart_service->removeCartItem($request->all(), $id);
+            return ApiHelper::validResponse("Cart item reduced", new CartResource($data));
         } catch (ValidationException $e) {
             report_error($e);
             $message = $e->validator->errors()->first();

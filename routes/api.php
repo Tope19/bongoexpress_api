@@ -100,6 +100,7 @@ Route::middleware(["auth:sanctum"])->group(function () {
         Route::get("/", [\App\Http\Controllers\Api\Products\CartController::class, "list"])->name("list");
         Route::post("/add", [\App\Http\Controllers\Api\Products\CartController::class, "add"])->name("add");
         Route::post("/update/{id}", [\App\Http\Controllers\Api\Products\CartController::class, "update"])->name("update");
+        Route::post("remove/{id}", [\App\Http\Controllers\Api\Products\CartController::class, "removeCartItem"])->name("remove");
         Route::post("/delete/{id}", [\App\Http\Controllers\Api\Products\CartController::class, "delete"])->name("delete");
     });
 
