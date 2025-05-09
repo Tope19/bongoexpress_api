@@ -21,6 +21,7 @@ class LogisticOrder extends Model
         'notes_for_rider',
         '_state',
         'status',
+        'payment_status',
     ];
 
     protected static function boot()

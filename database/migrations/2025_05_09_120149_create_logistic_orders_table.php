@@ -23,6 +23,7 @@ return new class extends Migration
             $table->text('notes_for_rider')->nullable();
             $table->enum('_state', ['Orders Received', 'On the way', 'Delivered at drop off location'])->default('Orders Received');
             $table->enum('status', ['Pending', 'Ongoing', 'Completed', 'Cancelled'])->default('Pending');
+            $table->enum('payment_status', ['Paid', 'Failed', 'Pending']);
             $table->timestamps();
         });
     }

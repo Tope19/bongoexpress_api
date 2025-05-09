@@ -198,7 +198,7 @@ class LogisticController extends Controller
                 $dropoffDistance = $priceDetails['dropoff_prices'][$index]['distance'] ?? 0;
 
                 OrderDropoff::create([
-                    'order_id' => $order->id,
+                    'logistic_order_id' => $order->id,
                     'recipient_name' => $dropoff['name'],
                     'address' => $dropoff['address'],
                     'phone_number' => $dropoff['phone'],
@@ -216,7 +216,7 @@ class LogisticController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'order_id' => $order->id,
+                    'logistic_order_id' => $order->id,
                     'order_number' => $order->order_number,
                     'total_price' => $order->total_price,
                     'total_distance' => $order->total_distance,
