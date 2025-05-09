@@ -122,4 +122,12 @@ Route::middleware(["auth:sanctum"])->group(function () {
         Route::get("/show/{id}", [\App\Http\Controllers\Api\Order\OrderController::class, "show"])->name("show");
     });
 
+    // logistics
+    Route::prefix("logistics")->as("logistics.")->group(function () {
+        Route::get("/package-types", [\App\Http\Controllers\Api\Logistics\LogisticController::class, "listPackageTypes"])->name("package_types");
+        Route::post("/create-order", [\App\Http\Controllers\Api\Logistics\LogisticController::class, "createOrder"])->name("create_order");
+        Route::get("/orders", [\App\Http\Controllers\Api\Logistics\LogisticController::class, "getOrders"])->name("orders");
+        Route::get("/order/{id}", [\App\Http\Controllers\Api\Logistics\LogisticController::class, "getOrderDetails"])->name("order_details");
+    });
+
 });
