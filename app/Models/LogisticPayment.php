@@ -15,6 +15,6 @@ class LogisticPayment extends Model
 
     public function order()
     {
-        return $this->belongsTo(LogisticOrder::class);
+        return $this->belongsTo(LogisticOrder::class, 'logistic_order_id');
     }
 }
