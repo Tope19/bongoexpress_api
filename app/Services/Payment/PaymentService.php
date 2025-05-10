@@ -5,6 +5,7 @@ namespace App\Services\Payment;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\LogisticPayment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use App\Exceptions\Product\CartException;
@@ -185,31 +186,62 @@ class PaymentService
                 'payload' => $payload,
             ]);
             $reference = $payload['data']['reference'];
+            $alreadyProcessed = Payment::where('reference', $reference)->where('status', 'Success')->exists()
+                || LogisticPayment::where('reference', $reference)->where('status', 'Success')->exists();
+
+            if ($alreadyProcessed) {
+                logger('Already processed payment', [
+                    'reference' => $reference,
+                ]);
+                return response('OK', 200); // Early exit
+            }
             $amountPaid = $payload['data']['amount'] / 100; // Convert from kobo
 
             DB::transaction(function () use ($reference, $amountPaid) {
-                $payment = Payment::where('reference', $reference)->firstOrFail();
-                $order = $payment->order;
+                $payment = Payment::where('reference', $reference)->first();
+                if($payment){
+                    $order = $payment->order;
 
-                if ($payment->status === 'Success') {
-                    // Already processed
-                    return;
+                    if ($payment->status === 'Success') {
+                        // Already processed
+                        return;
+                    }
+
+                    // Update payment
+                    $payment->update([
+                        'status' => 'Success',
+                    ]);
+
+                    // Update order
+                    $order->update([
+                        'payment_status' => 'Paid',
+                        'status' => 'Ongoing', // You can change depending on your flow
+                    ]);
+
+                    // clear the cart
+                    $user = $order->user;
+                    Cart::where('user_id', $user->id)->delete();
+                } else{
+                    // Try to find in LogisticPayment model
+                    $logisticPayment = LogisticPayment::where('reference', $reference)->firstOrFail();
+
+                    if ($logisticPayment->status === 'Success') {
+                        // Already processed
+                        return;
+                    }
+
+                    // Update logistic payment
+                    $logisticPayment->update([
+                        'status' => 'Success',
+                    ]);
+
+                    // Update related order or delivery task — update this part based on your model relationships
+                    $order = $logisticPayment->order;
+                    $order->update([
+                        'status' => 'Ongoing', // Or another relevant status
+                        'payment_status' => 'Paid',
+                    ]);
                 }
-
-                // Update payment
-                $payment->update([
-                    'status' => 'Success',
-                ]);
-
-                // Update order
-                $order->update([
-                    'payment_status' => 'Paid',
-                    'status' => 'Ongoing', // You can change depending on your flow
-                ]);
-
-                // clear the cart
-                $user = $order->user;
-                Cart::where('user_id', $user->id)->delete();
             });
         }
 
@@ -230,6 +262,26 @@ class PaymentService
                     $payment->order->update([
                         'payment_status' => 'Failed',
                         'status' => 'Pending', // You may want to keep it pending
+                    ]);
+                } else{
+                    // Try to find in LogisticPayment model
+                    $logisticPayment = LogisticPayment::where('reference', $reference)->firstOrFail();
+
+                    if ($logisticPayment->status === 'Failed') {
+                        // Already processed
+                        return;
+                    }
+
+                    // Update logistic payment
+                    $logisticPayment->update([
+                        'status' => 'Failed',
+                    ]);
+
+                    // Update related order or delivery task — update this part based on your model relationships
+                    $order = $logisticPayment->order;
+                    $order->update([
+                        'status' => 'Pending', // Or another relevant status
+                        'payment_status' => 'Failed',
                     ]);
                 }
             });

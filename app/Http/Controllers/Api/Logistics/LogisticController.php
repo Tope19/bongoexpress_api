@@ -7,12 +7,15 @@ use App\Helpers\ApiHelper;
 use App\Models\OrderDropoff;
 use Illuminate\Http\Request;
 use App\Models\LogisticOrder;
+use Illuminate\Support\Facades\Http;
 use App\Models\PickupLocation;
+use App\Models\LogisticPayment;
 use App\Http\Controllers\Controller;
 use App\Constants\General\ApiConstants;
 use App\Services\Logistic\OrderService;
 use Illuminate\Support\Facades\Validator;
 use App\Exceptions\Product\OrderException;
+use App\Exceptions\Payment\PaymentException;
 use App\Exceptions\Product\ProductException;
 use Illuminate\Validation\ValidationException;
 use App\Services\Logistic\PriceCalculationService;
@@ -139,6 +142,12 @@ class LogisticController extends Controller
         }
 
         $validated = $validator->validated();
+        $paystackSecretKey = config('services.paystack.secret_key');
+        if (empty($paystackSecretKey)) {
+            logger('Paystack secret key not set');
+            throw new PaymentException('Paystack secret key not set');
+        }
+        $user = auth()->user();
 
         try {
             // Start transaction
@@ -190,6 +199,7 @@ class LogisticController extends Controller
                 'total_distance' => $priceDetails['distance'],
                 'total_price' => $priceDetails['total_price'],
                 'notes_for_rider' => $validated['notes_for_rider'],
+                'payment_status' => 'Pending',
             ]);
 
             // Create dropoff locations
@@ -211,6 +221,38 @@ class LogisticController extends Controller
                 ]);
             }
 
+            // generate a reference for paystack
+            $reference = 'psk_ref_' . uniqid();
+
+            // create the payment
+            $payment = LogisticPayment::create([
+                'logistic_order_id' => $order->id,
+                'reference' => $reference,
+                'amount' => $priceDetails['total_price'],
+                'status' => 'Pending',
+            ]);
+
+             // Initialize payment on Paystack
+             $paystackResponse = Http::withToken($paystackSecretKey)->post('https://api.paystack.co/transaction/initialize', [
+                'email' => $user->email,
+                'amount' => $priceDetails['total_price'] * 100, // Paystack requires amount in kobo
+                'reference' => $reference,
+            ]);
+
+            // log the response
+            logger('Paystack response', [
+                'response' => $paystackResponse->json(),
+                'status_code' => $paystackResponse->status(),
+                'body' => $paystackResponse->body(),
+                'key' => substr($paystackSecretKey, 0, 10)
+            ]);
+
+            if (!$paystackResponse->ok()) {
+                throw new PaymentException('Payment initialization failed');
+            }
+
+            $responseBody = $paystackResponse->json();
+
             \DB::commit();
 
             return response()->json([
@@ -220,7 +262,10 @@ class LogisticController extends Controller
                     'order_number' => $order->order_number,
                     'total_price' => $order->total_price,
                     'total_distance' => $order->total_distance,
-                    'price_details' => $priceDetails
+                    'price_details' => $priceDetails,
+                    'payment_url' => $responseBody['data']['authorization_url'],
+                    'payment_reference' => $responseBody['data']['reference'],
+                    'access_code' => $responseBody['data']['access_code'],
                 ],
                 'message' => 'Order created successfully'
             ], 201);
