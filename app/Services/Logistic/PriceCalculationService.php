@@ -49,7 +49,7 @@ class PriceCalculationService
             'package_type_multiplier' => $packageType->price_multiplier,
             'price_before_min' => $totalBeforeMin,
             'minimum_price' => $settings->min_price,
-            'total_price' => $totalPrice,
+            'total_price' => round($totalPrice, 2),
             'distance' => $distance,
             'weight' => $weight,
             'package_type' => $packageType->name,
