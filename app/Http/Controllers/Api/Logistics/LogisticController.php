@@ -190,6 +190,8 @@ class LogisticController extends Controller
                 $validated['package_type_id']
             );
 
+
+
             // Create order
             $order = LogisticOrder::create([
                 'user_id' => auth()->id(),
@@ -232,10 +234,11 @@ class LogisticController extends Controller
                 'status' => 'Pending',
             ]);
 
+
              // Initialize payment on Paystack
              $paystackResponse = Http::withToken($paystackSecretKey)->post('https://api.paystack.co/transaction/initialize', [
                 'email' => $user->email,
-                'amount' => $priceDetails['total_price'] * 100, // Paystack requires amount in kobo
+                'amount' => (int) $priceDetails['total_price'] * 100, // Paystack requires amount in kobo
                 'reference' => $reference,
             ]);
 

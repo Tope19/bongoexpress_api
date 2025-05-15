@@ -135,6 +135,8 @@ class PaymentService
                 'status' => 'Pending',
             ]);
 
+            dd($payment);
+
             // Initialize payment on Paystack
             $paystackResponse = Http::withToken($paystackSecretKey)->post('https://api.paystack.co/transaction/initialize', [
                 'email' => $user->email,
