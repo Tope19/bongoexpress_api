@@ -150,9 +150,9 @@ class CartService
                 throw new CartException("Cart item quantity must be at least 1");
                 // $cart->delete();
             }
-
+            $cart->refresh();
             DB::commit();
-            return $cart->refresh();
+            return $cart;
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;
@@ -180,7 +180,7 @@ class CartService
         }
         $query = Cart::query()
             ->where('user_id', $user->id)
-            ->with(['size.product.images', 'user']);
+            ->with(['size.product.images', 'size.product.category', 'user']);
         if (!empty($per_page)) {
             return $query->paginate($per_page);
         }
