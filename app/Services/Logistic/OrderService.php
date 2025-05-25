@@ -26,7 +26,7 @@ class OrderService
         $model = LogisticOrder::where($column, $key)
                     ->where('user_id', $user->id)
                     ->with(['pickupLocation', 'user', 'packageType', 'dropoffs'])
-                    ->orderBy('created_at', 'desc')
+                    ->orderBy('updated_at', 'desc')
                     ->first();
         if (empty($model)) {
             throw new ModelNotFoundException("Order not found");
@@ -46,7 +46,7 @@ class OrderService
         $query = LogisticOrder::query()
             ->where('user_id', $user->id)
             ->with(['pickupLocation', 'user', 'packageType', 'dropoffs'])
-            ->orderBy('created_at', 'desc');
+            ->orderBy('updated_at', 'desc');
         if (!empty($per_page)) {
             return $query->paginate($per_page);
         }
