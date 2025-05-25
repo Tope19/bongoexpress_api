@@ -27,6 +27,8 @@ class LogisticOrderResource extends JsonResource
             'notes_for_rider' => $this->notes_for_rider,
             '_state' => $this->_state,
             'status' => $this->status,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }
