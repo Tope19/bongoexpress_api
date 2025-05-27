@@ -3,7 +3,9 @@
 namespace App\Http\Resources\User;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use ApiPlatform\Metadata\ApiResource;
 
+#[ApiResource]
 class UserResource extends JsonResource
 {
     /**

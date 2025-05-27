@@ -55,7 +55,8 @@ class ProductService
         try {
             $data = self::validate($data);
 
-            $data['sku'] = 'BONGO-' . strtoupper(uniqid());
+            $data['sku'] = 'SKU-' . strtoupper(uniqid());
+            $data['barcode'] = 'BAR-' . strtoupper(uniqid());
             $data["status"] = 1;
             $product = Product::create($data);
             DB::commit();
