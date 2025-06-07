@@ -23,7 +23,9 @@ class SizeService
 
     public static function getById($key, $column = "id"): ProductSize
     {
-        $model = ProductSize::where($column, $key)->first();
+        $model = ProductSize::where($column, $key)
+        ->with(['product', 'product.category', 'product.user'])
+        ->first();
         if (empty($model)) {
             throw new ModelNotFoundException("Product Size not found");
         }
@@ -104,7 +106,9 @@ class SizeService
     public function getAll($per_page = null)
     {
         $query = ProductSize::query()
-                                ->where("status", 1);
+                                ->with(['product', 'product.category', 'product.user'])
+                                ->where("status", 1)
+                                ->orderBy("id", "DESC");
         if (!empty($per_page)) {
             return $query->paginate($per_page);
         }

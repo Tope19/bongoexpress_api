@@ -44,7 +44,8 @@ class ProductController extends Controller
     public function create(Request $request)
     {
         try {
-            $data = $this->product_service->create($request->all());
+            $data = $request->all();
+            $data = $this->product_service->create($data);
             return ApiHelper::validResponse("Product created successfully", new ProductResource($data));
         } catch (ValidationException $e) {
             report_error($e);
