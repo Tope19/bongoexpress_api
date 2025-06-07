@@ -54,10 +54,14 @@ class ProductService
         DB::beginTransaction();
         try {
             $data = self::validate($data);
-
+            $data['user_id'] = auth()->user()->id;
             $data['sku'] = 'SKU-' . strtoupper(uniqid());
             $data['barcode'] = 'BAR-' . strtoupper(uniqid());
             $data["status"] = 1;
+            // user role is User, then don't allow them to create a product
+            if (auth()->user()->role == 'User') {
+                throw new \Exception("You are not allowed to create a product");
+            }
             $product = Product::create($data);
             DB::commit();
             return $product;
@@ -102,8 +106,10 @@ class ProductService
     public function getAll($per_page = null)
     {
         $query = Product::query()
-                            ->with(["category", "images", "sizes"])
-                                ->where("status", 1);
+                            ->with(["category", "images", "sizes", "user"])
+                                ->where("status", 1)
+                                ->orderBy("id", "DESC");
+        // dd($query->get());
         if (!empty($per_page)) {
             return $query->paginate($per_page);
         }

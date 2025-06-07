@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Products;
 
+use App\Http\Resources\User\UserResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductResource extends JsonResource
@@ -17,6 +18,7 @@ class ProductResource extends JsonResource
         return [
             "id" => (int) $this->id,
             'category' => new CategoryResource($this->whenLoaded('category')),
+            "user" => new UserResource($this->whenLoaded('user')),
             "name" => $this->name,
             "description" => $this->description,
             "sku" => $this->sku,

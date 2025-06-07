@@ -5,7 +5,7 @@ use App\Http\Controllers\Api\Auth\PasswordController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\Auth\VerificationController;
 use App\Http\Controllers\Api\User\UserController;
-use App\Http\Middleware\Driver\DriverMiddleware;
+use App\Http\Middleware\ApiEnsureFrontendRequestsAreStateful;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -26,9 +26,11 @@ Route::get('/test-email', function() {
     ]);
 });
 
+// Guest routes
+Route::get("/products/list", [\App\Http\Controllers\Api\Products\SizeController::class, "list"])->name("list");
+Route::get("/product-details/{id}", [\App\Http\Controllers\Api\Products\SizeController::class, "show"])->name("show");
+Route::get("/categories/list", [\App\Http\Controllers\Api\Products\CategoryController::class, "list"])->name("list");
 Route::post("/payment/webhook", [\App\Http\Controllers\Api\Payment\PaymentController::class, "webhook"])->name("paystack.webhook");
-
-
 
 Route::prefix("auth")->as("auth.")->group(function () {
     Route::post("/register", [RegisterController::class, "register"])->name("register");
@@ -45,7 +47,8 @@ Route::prefix("auth")->as("auth.")->group(function () {
     });
 });
 
-Route::middleware(["auth:sanctum"])->group(function () {
+// Authenticated routes
+Route::middleware([ApiEnsureFrontendRequestsAreStateful::class, "auth:sanctum"])->group(function () {
     Route::get("/me", [UserController::class, "me"])->name("me");
 
     Route::prefix("user")->as("user.")->group(function () {

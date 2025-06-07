@@ -16,16 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        // Handle unauthenticated access for API requests
-        $exceptions->render(function (AuthenticationException $e, $request) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => 'Unauthenticated',
-                    'code' => 401,
-                ], 401);
-            }
-
-            // fallback for non-API requests
-            return redirect()->guest('login'); // optional if login route doesn't exist
+       $exceptions->render(function (AuthenticationException $e, $request) {
+            \Log::info('Custom AuthenticationException handler triggered');
+            return response()->json([
+                'message' => 'Unauthenticated.',
+                'error' => 'Authentication required.',
+            ], 401);
         });
     })->create();
