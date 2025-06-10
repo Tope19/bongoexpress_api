@@ -23,7 +23,8 @@ class ProductService
 
     public static function getById($key, $column = "id"): Product
     {
-        $model = Product::where($column, $key)->first();
+        $model = Product::with(["category", "images", "sizes"])
+                ->where($column, $key)->first();
         if (empty($model)) {
             throw new ModelNotFoundException("Product not found");
         }
@@ -106,7 +107,7 @@ class ProductService
     public function getAll($per_page = null)
     {
         $query = Product::query()
-                            ->with(["category", "images", "sizes", "user"])
+                            ->with(["category", "images", "sizes"])
                                 ->where("status", 1)
                                 ->orderBy("id", "DESC");
         // dd($query->get());

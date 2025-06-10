@@ -27,8 +27,8 @@ Route::get('/test-email', function() {
 });
 
 // Guest routes
-Route::get("/products/list", [\App\Http\Controllers\Api\Products\SizeController::class, "list"])->name("list");
-Route::get("/product-details/{id}", [\App\Http\Controllers\Api\Products\SizeController::class, "show"])->name("show");
+Route::get("/products/list", [\App\Http\Controllers\Api\Products\ProductController::class, "list"])->name("list");
+Route::get("/product-details/{id}", [\App\Http\Controllers\Api\Products\ProductController::class, "show"])->name("show");
 Route::get("/categories/list", [\App\Http\Controllers\Api\Products\CategoryController::class, "list"])->name("list");
 Route::post("/payment/webhook", [\App\Http\Controllers\Api\Payment\PaymentController::class, "webhook"])->name("paystack.webhook");
 
