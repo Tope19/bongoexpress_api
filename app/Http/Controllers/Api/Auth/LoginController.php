@@ -2,18 +2,25 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
-use App\Constants\General\ApiConstants;
-use App\Exceptions\Auth\AuthException;
-use App\Helpers\ApiHelper;
-use App\Http\Controllers\Controller;
-use App\Http\Resources\User\PreviewResource;
-use App\Http\Resources\User\UserResource;
-use App\Services\Auth\LoginService;
-use App\Services\Auth\SanctumService;
-use App\Services\User\UserService;
-use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 use Exception;
+use App\Models\User;
+use Firebase\JWT\JWK;
+use Firebase\JWT\JWT;
+use App\Helpers\ApiHelper;
+use Illuminate\Http\Request;
+use App\Services\User\UserService;
+use App\Services\Auth\LoginService;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use App\Constants\User\UserConstants;
+use App\Services\Auth\SanctumService;
+use App\Exceptions\Auth\AuthException;
+use App\Constants\General\ApiConstants;
+use App\Http\Resources\User\UserResource;
+use App\Constants\General\StatusConstants;
+use App\Http\Resources\User\PreviewResource;
+use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
@@ -29,6 +36,8 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         try {
+            $token = generateAppleClientSecret();
+            dd($token);
             $user = $this->login_service->authenticate($request->all());
             $data["user"] =  UserResource::make($user)->toArray($request);
             $data["token"] = $user->createToken(SanctumService::SESSION_KEY)->plainTextToken;
@@ -86,6 +95,69 @@ class LoginController extends Controller
             return ApiHelper::validResponse("User logged out successfully");
         } catch (Exception $e) {
             return ApiHelper::problemResponse($this->serverErrorMessage, ApiConstants::SERVER_ERR_CODE, null, $e);
+        }
+    }
+
+    public function signInWithApple(Request $request)
+    {
+        $validatedData = $request->validate([
+            'identity_token' => 'required|string',
+        ]);
+
+        try {
+            // 1. Get Apple Public Keys
+            $applePublicKeys = Http::get('https://appleid.apple.com/auth/keys')->json();
+            $jwkKeys = JWK::parseKeySet($applePublicKeys);
+
+            // 2. Decode identity token using Apple public keys
+            $decodedToken = JWT::decode($validatedData['identity_token'], $jwkKeys);
+
+            // 3. Extract user identity
+            $appleSub = $decodedToken->sub ?? null;
+            $email = $decodedToken->email ?? $request->email;
+
+            if (!$appleSub) {
+                return response()->json(['error' => 'Invalid Apple token.'], 400);
+            }
+
+            // 4. Find existing user by Apple ID
+            $user = User::where('apple_id', $appleSub)->first();
+
+            // 5. If user does not exist, create one
+            if (!$user) {
+                // Optional: fallback match by email if same user used another method before
+                $user = User::where('email', $email)->first();
+
+                if ($user) {
+                    // Link Apple ID to existing user
+                    $user->update(['apple_id' => $appleSub]);
+                } else {
+                    $user = User::create([
+                        'apple_id' => $appleSub,
+                        'email' => $email,
+                        'first_name' => $request->first_name ?? '-',
+                        'last_name' => $request->last_name ?? '-',
+                        'email_verified_at' => now(),
+                        'password' => bcrypt('password'),
+                        'status' => StatusConstants::ACTIVE,
+                        'role' => UserConstants::USER,
+                    ]);
+                }
+            }
+
+
+            // 6. Create Sanctum token
+            $token = $user->createToken('apple-signin')->plainTextToken;
+
+            return response()->json([
+                'user' => $user,
+                'token' => $token,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => 'Apple sign-in failed',
+                'message' => $e->getMessage()
+            ], 401);
         }
     }
 }

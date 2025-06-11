@@ -2,6 +2,7 @@
 
 use App\Constants\AppConstants;
 use App\Helpers\Helper;
+use Firebase\JWT\JWT;
 use App\Models\Admin;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -70,6 +71,20 @@ function uploadImage($file, $folder)
         return "storage/$folder/$fileName";
     }
     return null;
+}
+
+function generateAppleClientSecret() {
+    $privateKey = file_get_contents(storage_path('oauth/AuthKey_'.env('APPLE_KEY_ID').'.p8'));
+
+    $payload = [
+        'iss' => env('APPLE_TEAM_ID'),
+        'iat' => time(),
+        'exp' => time() + 86400 * 180, // 180 days
+        'aud' => 'https://appleid.apple.com',
+        'sub' => env('APPLE_CLIENT_ID'),
+    ];
+
+    return JWT::encode($payload, $privateKey, 'ES256', env('APPLE_KEY_ID'));
 }
 
 
