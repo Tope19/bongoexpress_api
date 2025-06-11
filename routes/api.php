@@ -36,6 +36,8 @@ Route::prefix("auth")->as("auth.")->group(function () {
     Route::post("/register", [RegisterController::class, "register"])->name("register");
     Route::post("/oauth-login", [LoginController::class, "oauthLogin"]);
     Route::post("/login", [LoginController::class, "login"])->name("login");
+    Route::post("/apple/signin", [LoginController::class, "signInWithApple"])->name("signInWithApple");
+
 
     Route::prefix("password")->as("password.")->group(function () {
         Route::post('/forgot', [PasswordController::class, 'forgotPassword'])->name("forgot_password");
