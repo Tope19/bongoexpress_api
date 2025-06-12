@@ -36,8 +36,6 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         try {
-            $token = generateAppleClientSecret();
-            dd($token);
             $user = $this->login_service->authenticate($request->all());
             $data["user"] =  UserResource::make($user)->toArray($request);
             $data["token"] = $user->createToken(SanctumService::SESSION_KEY)->plainTextToken;
