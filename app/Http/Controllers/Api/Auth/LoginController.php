@@ -100,6 +100,8 @@ class LoginController extends Controller
     {
         $validatedData = $request->validate([
             'identity_token' => 'required|string',
+            'first_name' => 'nullable|string',
+            'last_name' => 'nullable|string',
         ]);
 
         try {
@@ -133,8 +135,8 @@ class LoginController extends Controller
                     $user = User::create([
                         'apple_id' => $appleSub,
                         'email' => $email,
-                        'first_name' => $request->first_name ?? '-',
-                        'last_name' => $request->last_name ?? '-',
+                        'first_name' => $validatedData['first_name'] ?? '-',
+                        'last_name' => $validatedData['last_name'] ?? '-',
                         'email_verified_at' => now(),
                         'password' => bcrypt('password'),
                         'status' => StatusConstants::ACTIVE,
