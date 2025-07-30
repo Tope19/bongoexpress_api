@@ -130,9 +130,20 @@ Route::middleware([ApiEnsureFrontendRequestsAreStateful::class, "auth:sanctum"])
     // logistics
     Route::prefix("logistics")->as("logistics.")->group(function () {
         Route::get("/package-types", [\App\Http\Controllers\Api\Logistics\LogisticController::class, "listPackageTypes"])->name("package_types");
+        Route::get("/delivery-zones", [\App\Http\Controllers\Api\Logistics\LogisticController::class, "listDeliveryZones"])->name("delivery_zones");
         Route::post("/create-order", [\App\Http\Controllers\Api\Logistics\LogisticController::class, "createOrder"])->name("create_order");
         Route::get("/orders", [\App\Http\Controllers\Api\Logistics\LogisticController::class, "getOrders"])->name("orders");
         Route::get("/order/{id}", [\App\Http\Controllers\Api\Logistics\LogisticController::class, "getOrderDetails"])->name("order_details");
+        Route::post("/test-zone-pricing", [\App\Http\Controllers\Api\Logistics\LogisticController::class, "testZonePricing"])->name("test_zone_pricing");
+    });
+
+    // location-based shipping
+    Route::prefix("location")->as("location.")->group(function () {
+        Route::get("/states", [\App\Http\Controllers\Api\Location\LocationController::class, "getStates"])->name("states");
+        Route::get("/states/{stateId}/cities", [\App\Http\Controllers\Api\Location\LocationController::class, "getCitiesByState"])->name("cities_by_state");
+        Route::get("/states/{stateId}/zones", [\App\Http\Controllers\Api\Location\LocationController::class, "getZonesByState"])->name("zones_by_state");
+        Route::get("/cities/{cityId}/zones", [\App\Http\Controllers\Api\Location\LocationController::class, "getZonesByCity"])->name("zones_by_city");
+        Route::post("/calculate-shipping", [\App\Http\Controllers\Api\Location\LocationController::class, "calculateShippingFee"])->name("calculate_shipping");
     });
 
 });

@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\LogisticPayment;
+use App\Models\DeliveryZone;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use App\Exceptions\Product\CartException;
@@ -90,10 +91,8 @@ class PaymentService
             $total = 0.00;
             // Apply any additional logic here (shipping fee, discounts, etc.)
             if ($data['delivery_method'] == 'Door Delivery') {
-
-                // get the user address
-                // Add shipping fee if applicable
-                $shippingFee = 500.00; // Example shipping fee
+                // Calculate shipping fee based on location
+                $shippingFee = $this->calculateLocationBasedShippingFee($data);
                 $total += $shippingFee;
             }
 
@@ -134,8 +133,6 @@ class PaymentService
                 'amount' => $total,
                 'status' => 'Pending',
             ]);
-
-            dd($payment);
 
             // Initialize payment on Paystack
             $paystackResponse = Http::withToken($paystackSecretKey)->post('https://api.paystack.co/transaction/initialize', [
@@ -292,4 +289,36 @@ class PaymentService
         return $payload;
     }
 
+    /**
+     * Calculate location-based shipping fee
+     */
+    private function calculateLocationBasedShippingFee(array $data): float
+    {
+        // Default shipping fee if no location data
+        $defaultShippingFee = 500.00;
+
+        // Check if we have location data
+        if (!isset($data['state_id'])) {
+            return $defaultShippingFee;
+        }
+
+        // Get zones for the state
+        $zones = DeliveryZone::getZonesByState($data['state_id']);
+
+        if ($zones->isEmpty()) {
+            // Fallback to catch-all zone
+            $fallbackZone = DeliveryZone::where('state_id', null)
+                ->where('is_active', true)
+                ->first();
+
+            if ($fallbackZone) {
+                return $fallbackZone->base_price;
+            }
+
+            return $defaultShippingFee;
+        }
+
+        // Use the first available zone (you can add logic to select specific zone)
+        return $zones->first()->base_price;
+    }
 }

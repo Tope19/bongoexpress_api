@@ -4,11 +4,64 @@ namespace App\Services\Logistic;
 
 use App\Models\PriceSetting;
 use App\Models\PackageType;
+use App\Models\DeliveryZone;
 
 class PriceCalculationService
 {
     /**
-     * Calculate the delivery price based on distance, weight, and package type
+     * Calculate the delivery price based on location zones, distance, weight, and package type
+     *
+     * @param float $pickupLat Pickup latitude
+     * @param float $pickupLon Pickup longitude
+     * @param float $dropoffLat Dropoff latitude
+     * @param float $dropoffLon Dropoff longitude
+     * @param float $weight Weight in kilograms
+     * @param int $packageTypeId ID of the package type
+     * @return array Price calculation details
+     */
+    public function calculateZoneBasedPrice(
+        float $pickupLat,
+        float $pickupLon,
+        float $dropoffLat,
+        float $dropoffLon,
+        float $weight,
+        int $packageTypeId
+    ): array {
+        // Get package type
+        $packageType = PackageType::findOrFail($packageTypeId);
+
+        // Find the appropriate delivery zone
+        $deliveryZone = DeliveryZone::findZoneForDelivery($pickupLat, $pickupLon, $dropoffLat, $dropoffLon);
+
+        if (!$deliveryZone) {
+            throw new \Exception('No delivery zone found for the specified locations');
+        }
+
+        // Calculate distance
+        $distance = $this->calculateDistance($pickupLat, $pickupLon, $dropoffLat, $dropoffLon);
+
+        // Use zone-based pricing
+        $basePrice = $deliveryZone->base_price;
+
+        // Apply package type multiplier
+        $totalPrice = $basePrice * $packageType->price_multiplier;
+
+        return [
+            'zone_name' => $deliveryZone->name,
+            'zone_description' => $deliveryZone->description,
+            'base_price' => $basePrice,
+            'package_type_multiplier' => $packageType->price_multiplier,
+            'total_price' => round($totalPrice, 2),
+            'distance' => $distance,
+            'weight' => $weight,
+            'package_type' => $packageType->name,
+            'pickup_coordinates' => ['lat' => $pickupLat, 'lon' => $pickupLon],
+            'dropoff_coordinates' => ['lat' => $dropoffLat, 'lon' => $dropoffLon],
+        ];
+    }
+
+    /**
+     * Calculate the delivery price based on distance, weight, and package type (legacy method)
      *
      * @param float $distance Distance in kilometers
      * @param float $weight Weight in kilograms
@@ -121,7 +174,81 @@ class PriceCalculationService
     }
 
     /**
-     * Calculate price for a delivery with multiple dropoffs
+     * Calculate price for a delivery with multiple dropoffs using zone-based pricing
+     *
+     * @param array $pickupLocation [lat, lon] of pickup location
+     * @param array $dropoffLocations Array of [lat, lon] dropoff locations
+     * @param float $weight Weight in kilograms
+     * @param int $packageTypeId ID of package type
+     * @return array Price calculation details with individual dropoff prices
+     */
+    public function calculateMultiDropoffZonePrice(
+        array $pickupLocation,
+        array $dropoffLocations,
+        float $weight,
+        int $packageTypeId
+    ): array {
+        $packageType = PackageType::findOrFail($packageTypeId);
+        $totalPrice = 0;
+        $dropoffPrices = [];
+
+        // Calculate price for each dropoff location
+        foreach ($dropoffLocations as $index => $dropoff) {
+            try {
+                $zonePriceDetails = $this->calculateZoneBasedPrice(
+                    $pickupLocation['lat'],
+                    $pickupLocation['lon'],
+                    $dropoff['lat'],
+                    $dropoff['lon'],
+                    $weight,
+                    $packageTypeId
+                );
+
+                $dropoffPrices[] = [
+                    'index' => $index,
+                    'zone_name' => $zonePriceDetails['zone_name'],
+                    'distance' => $zonePriceDetails['distance'],
+                    'price' => $zonePriceDetails['total_price'],
+                    'coordinates' => $dropoff
+                ];
+
+                $totalPrice += $zonePriceDetails['total_price'];
+
+            } catch (\Exception $e) {
+                // If no zone found, use fallback pricing
+                $distance = $this->calculateDistance(
+                    $pickupLocation['lat'],
+                    $pickupLocation['lon'],
+                    $dropoff['lat'],
+                    $dropoff['lon']
+                );
+
+                $fallbackPrice = $this->calculatePrice($distance, $weight, $packageTypeId);
+
+                $dropoffPrices[] = [
+                    'index' => $index,
+                    'zone_name' => 'Fallback Pricing',
+                    'distance' => $distance,
+                    'price' => $fallbackPrice['total_price'],
+                    'coordinates' => $dropoff
+                ];
+
+                $totalPrice += $fallbackPrice['total_price'];
+            }
+        }
+
+        return [
+            'total_price' => round($totalPrice, 2),
+            'weight' => $weight,
+            'package_type' => $packageType->name,
+            'pickup_coordinates' => $pickupLocation,
+            'dropoff_prices' => $dropoffPrices,
+            'total_dropoffs' => count($dropoffLocations),
+        ];
+    }
+
+    /**
+     * Calculate price for a delivery with multiple dropoffs (legacy method)
      *
      * @param array $pickupLocation [lat, lon] of pickup location
      * @param array $dropoffLocations Array of [lat, lon] dropoff locations

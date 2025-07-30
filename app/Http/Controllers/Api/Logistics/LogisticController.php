@@ -57,7 +57,29 @@ class LogisticController extends Controller
     }
 
     /**
-     * Calculate price for delivery
+     * Get available delivery zones
+     */
+    public function listDeliveryZones(Request $request)
+    {
+        try {
+            $zones = \App\Models\DeliveryZone::where('is_active', true)->get();
+            $data = \App\Http\Resources\Logistics\DeliveryZoneResource::collection($zones);
+            return ApiHelper::validResponse("Delivery Zones retrieved successfully", $data);
+        } catch (ValidationException $e) {
+            report_error($e);
+            $message = $e->validator->errors()->first();
+            return ApiHelper::inputErrorResponse($message, ApiConstants::VALIDATION_ERR_CODE, null, $e);
+        } catch (ProductException $e) {
+            report_error($e);
+            return ApiHelper::problemResponse($e->getMessage(), ApiConstants::BAD_REQ_ERR_CODE, null, $e);
+        } catch (Exception $e) {
+            report_error($e);
+            return ApiHelper::throwableResponse($e, $request);
+        }
+    }
+
+    /**
+     * Calculate price for delivery using zone-based pricing
      */
     public function generatePrice(Request $request)
     {
@@ -85,13 +107,16 @@ class LogisticController extends Controller
                     'lon' => $location['longitude'],
                 ];
             }
-            $priceDetails = $this->price_service->calculateMultiDropoffPrice(
+
+            // Use zone-based pricing for multiple dropoffs
+            $priceDetails = $this->price_service->calculateMultiDropoffZonePrice(
                 $pickupLocation,
                 $dropoffLocations,
                 $validated['weight'],
                 $validated['package_type_id']
             );
-            return ApiHelper::validResponse("Estimated Fare generated", $priceDetails);
+
+            return ApiHelper::validResponse("Estimated Fare generated using zone-based pricing", $priceDetails);
         } catch (ValidationException $e) {
             report_error($e);
             $message = $e->validator->errors()->first();
@@ -183,7 +208,8 @@ class LogisticController extends Controller
                 ];
             }
 
-            $priceDetails = $this->price_service->calculateMultiDropoffPrice(
+            // Use zone-based pricing for multiple dropoffs
+            $priceDetails = $this->price_service->calculateMultiDropoffZonePrice(
                 $pickupLocation,
                 $dropoffLocations,
                 $validated['weight'],
@@ -320,6 +346,43 @@ class LogisticController extends Controller
         } catch (OrderException $e) {
             report_error($e);
             return ApiHelper::problemResponse($e->getMessage(), ApiConstants::BAD_REQ_ERR_CODE, null, $e);
+        } catch (Exception $e) {
+            report_error($e);
+            return ApiHelper::throwableResponse($e, $request);
+        }
+    }
+
+    /**
+     * Test zone-based pricing (for development/testing)
+     */
+    public function testZonePricing(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'pickup_latitude' => 'required|numeric',
+                'pickup_longitude' => 'required|numeric',
+                'dropoff_latitude' => 'required|numeric',
+                'dropoff_longitude' => 'required|numeric',
+                'weight' => 'required|numeric|min:0.1',
+                'package_type_id' => 'required|exists:package_types,id',
+            ]);
+            $validated = $validator->validated();
+
+            // Test zone-based pricing
+            $zonePriceDetails = $this->price_service->calculateZoneBasedPrice(
+                $validated['pickup_latitude'],
+                $validated['pickup_longitude'],
+                $validated['dropoff_latitude'],
+                $validated['dropoff_longitude'],
+                $validated['weight'],
+                $validated['package_type_id']
+            );
+
+            return ApiHelper::validResponse("Zone-based pricing test successful", $zonePriceDetails);
+        } catch (ValidationException $e) {
+            report_error($e);
+            $message = $e->validator->errors()->first();
+            return ApiHelper::inputErrorResponse($message, ApiConstants::VALIDATION_ERR_CODE, null, $e);
         } catch (Exception $e) {
             report_error($e);
             return ApiHelper::throwableResponse($e, $request);
